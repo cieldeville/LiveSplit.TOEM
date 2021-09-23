@@ -1,4 +1,5 @@
 ﻿using LiveSplit.Model;
+using LiveSplit.TOEM.Gane;
 using LiveSplit.TOEM.Memory;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
@@ -88,11 +89,11 @@ namespace LiveSplit.TOEM
             try
             {
                 _gameState.Update();
-                Console.WriteLine("Current Region: " + _gameState.CurrentRegion.CurrentValue.ToString());
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // TODO: Log exception
+                Console.WriteLine(ex);
             }
         }
 

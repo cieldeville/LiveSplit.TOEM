@@ -96,18 +96,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GameState.cs" />
-    <Compile Include="IPointerResolution.cs" />
+    <Compile Include="Game\GameState.cs" />
+    <Compile Include="Game\PlayerController.cs" />
+    <Compile Include="Memory\IPointerPathElement.cs" />
     <Compile Include="Memory\IResolvableAddress.cs" />
     <Compile Include="Memory\MemoryAccessFlags.cs" />
     <Compile Include="Memory\MemoryInterface.cs" />
     <Compile Include="Memory\MemoryScanner.cs" />
     <Compile Include="Memory\MemoryWatcher.cs" />
+    <Compile Include="Memory\PointerPath.cs" />
+    <Compile Include="Memory\PointerPathDeref.cs" />
+    <Compile Include="Memory\PointerPathOffset.cs" />
     <Compile Include="Memory\Signature.cs" />
     <Compile Include="Memory\SignatureResolvableAddress.cs" />
     <Compile Include="Memory\VariableWatcher.cs" />
     <Compile Include="ProcessCapture.cs" />
-    <Compile Include="SignaturePointerResolution.cs" />
     <Compile Include="Test\DebugRunner.cs" />
     <Compile Include="TOEMComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

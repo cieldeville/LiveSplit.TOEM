@@ -178,6 +178,8 @@ namespace LiveSplit.TOEM.Memory
         //
         // Knuth-Morris-Pratt with wildcards
         //
+        // Bugged due to erroneous backtracking on wildcards
+        //
 
 
         /// <summary>
@@ -187,6 +189,99 @@ namespace LiveSplit.TOEM.Memory
         /// <param name="filter">A filter to use for narrowing the search down to specific blocks of memory</param>
         /// <param name="abortAfterMatch">Whether or not the search should abort once a first match is found</param>
         /// <returns>A list of matches found within the current block of memory</returns>
+        //private List<Match> FindInBlock(Signature signature, ulong baseAddress, bool abortAfterMatch)
+        //{
+        //    if (baseAddress != 0x0000026c631affdful)
+        //    {
+        //        return new List<Match>();
+        //    }
+
+        //    List<Match> matches = new List<Match>();
+
+        //    int i = 0;
+        //    int j = 0;
+
+        //    while (i < _available)
+        //    {
+        //        if (i >= 54024)
+        //        {
+        //            if (i < _available && (signature.Mask[j] || _memoryView[i] == signature.Bytes[j]))
+        //            {
+        //                ++i;
+        //                ++j;
+
+        //                if (j == signature.Length)
+        //                {
+        //                    // Copy data for match
+        //                    byte[] copy = new byte[signature.Length];
+        //                    Buffer.BlockCopy(_memoryView, i - signature.Length, copy, 0, signature.Length);
+        //                    Match match = new Match(new UIntPtr(baseAddress + (ulong)i - (ulong)signature.Length), copy);
+
+        //                    matches.Add(match);
+        //                    if (abortAfterMatch)
+        //                    {
+        //                        return matches;
+        //                    }
+
+        //                    // Reset for next match
+        //                    j = signature.Prefixes[j];
+        //                }
+        //            }
+        //            else
+        //            {
+        //                j = signature.Prefixes[j];
+        //                if (j < 0)
+        //                {
+        //                    ++i;
+        //                    ++j;
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {
+        //            if (i < _available && (signature.Mask[j] || _memoryView[i] == signature.Bytes[j]))
+        //            {
+        //                ++i;
+        //                ++j;
+
+        //                if (j == signature.Length)
+        //                {
+        //                    // Copy data for match
+        //                    byte[] copy = new byte[signature.Length];
+        //                    Buffer.BlockCopy(_memoryView, i - signature.Length, copy, 0, signature.Length);
+        //                    Match match = new Match(new UIntPtr(baseAddress + (ulong)i - (ulong)signature.Length), copy);
+
+        //                    matches.Add(match);
+        //                    if (abortAfterMatch)
+        //                    {
+        //                        return matches;
+        //                    }
+
+        //                    // Reset for next match
+        //                    j = signature.Prefixes[j];
+        //                }
+        //            }
+        //            else
+        //            {
+        //                j = signature.Prefixes[j];
+        //                if (j < 0)
+        //                {
+        //                    ++i;
+        //                    ++j;
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    return matches;
+        //}
+
+
+
+        //
+        // Brute Force Search
+        //
+
         private List<Match> FindInBlock(Signature signature, ulong baseAddress, bool abortAfterMatch)
         {
             List<Match> matches = new List<Match>();
@@ -196,17 +291,18 @@ namespace LiveSplit.TOEM.Memory
 
             while (i < _available)
             {
-                if (i < _available && (signature.Mask[j] || _memoryView[i] == signature.Bytes[j]))
+                while (i + j < _available && (signature.Mask[j] || _memoryView[i + j] == signature.Bytes[j]))
                 {
-                    ++i;
                     ++j;
 
                     if (j == signature.Length)
                     {
+                        // Match found:
+
                         // Copy data for match
                         byte[] copy = new byte[signature.Length];
-                        Buffer.BlockCopy(_memoryView, i - signature.Length, copy, 0, signature.Length);
-                        Match match = new Match(new UIntPtr(baseAddress + (ulong) i - (ulong) signature.Length), copy);
+                        Buffer.BlockCopy(_memoryView, i, copy, 0, signature.Length);
+                        Match match = new Match(new UIntPtr(baseAddress + (ulong)i), copy);
 
                         matches.Add(match);
                         if (abortAfterMatch)
@@ -214,66 +310,14 @@ namespace LiveSplit.TOEM.Memory
                             return matches;
                         }
 
-                        // Reset for next match
-                        j = signature.Prefixes[j];
+                        break;
                     }
                 }
-                else
-                {
-                    j = signature.Prefixes[j];
-                    if (j < 0)
-                    {
-                        ++i;
-                        ++j;
-                    }
-                }
+                ++i;
+                j = 0;
             }
 
             return matches;
         }
-
-
-
-        //
-        // Brute Force Search
-        //
-
-        //private List<Match> FindInBlock(Signature signature, bool abortAfterMatch)
-        //{
-        //    List<Match> matches = new List<Match>();
-
-        //    int i = 0;
-        //    int j = 0;
-
-        //    while (i < _available)
-        //    {
-        //        while (i + j < _available && (signature.Mask[j] || _memoryView[i + j] == signature.Bytes[j]))
-        //        {
-        //            ++j;
-
-        //            if (j == signature.Length)
-        //            {
-        //                // Match found:
-
-        //                // Copy data for match
-        //                byte[] copy = new byte[signature.Length];
-        //                Buffer.BlockCopy(_memoryView, i - signature.Length, copy, 0, signature.Length);
-        //                Match match = new Match(copy);
-
-        //                matches.Add(match);
-        //                if (abortAfterMatch)
-        //                {
-        //                    return matches;
-        //                }
-
-        //                break;
-        //            }
-        //        }
-        //        ++i;
-        //        j = 0;
-        //    }
-
-        //    return matches;
-        //}
     }
 }

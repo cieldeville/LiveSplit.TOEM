@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace LiveSplit.TOEM.Memory
 {
@@ -41,7 +37,7 @@ namespace LiveSplit.TOEM.Memory
             while (i < _sig.Length)
             {
                 // match
-                if (_sig[i] == _sig[j] || _mask[i] || _mask[j])
+                if (_sig[i] == _sig[j] || _mask[i])
                 {
                     ++j;
                     ++i;

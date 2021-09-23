@@ -136,10 +136,10 @@ namespace LiveSplit.TOEM.Memory
         /// Creates a VariableWatcher which may be used to access a variable in the process' memory.
         /// </summary>
         /// <typeparam name="T">The type of variable ; must be unmanaged and primitive</typeparam>
-        /// <param name="address">The address of the variable</param>
+        /// <param name="path">The variable's pointer path</param>
         /// <param name="defaultValue">The variable's default value</param>
         /// <returns>A variable watcher for the described variable</returns>
-        public VariableWatcher<T> WatchMemory<T>(UIntPtr address, T defaultValue = default(T)) where T : unmanaged
+        public VariableWatcher<T> WatchMemory<T>(PointerPath path, T defaultValue = default(T)) where T : unmanaged
         {
             // Determine access levels
             int size;
@@ -149,36 +149,20 @@ namespace LiveSplit.TOEM.Memory
                 else size = sizeof(T);
             }
 
-            MemoryAccessFlags flags = DetermineAccessFlags(address, size);
-            return new VariableWatcher<T>(this, address, flags, defaultValue);
-        }
-
-        /// <summary>
-        /// See overload for UIntPtr address.
-        /// </summary>
-        public VariableWatcher<T> WatchMemory<T>(IResolvableAddress address, T defaultValue = default(T)) where T : unmanaged
-        {
-            return WatchMemory(address.Resolve(this), defaultValue);
+            MemoryAccessFlags flags = DetermineAccessFlags(path.Follow(this), size);
+            return new VariableWatcher<T>(this, path, flags, defaultValue);
         }
 
         /// <summary>
         /// Creates a MemoryWatcher which may be used to access a region of the process' memory.
         /// </summary>
-        /// <param name="address">The address of the memory region</param>
+        /// <param name="path">The memory region's pointer path</param>
         /// <param name="count">The size of the memory region in bytes</param>
         /// <returns>A memory watcher for the described memory region</returns>
-        public MemoryWatcher WatchMemory(UIntPtr address, int count)
+        public MemoryWatcher WatchMemory(PointerPath path, int count)
         {
-            MemoryAccessFlags flags = DetermineAccessFlags(address, count);
-            return new MemoryWatcher(this, address, count, flags);
-        }
-
-        /// <summary>
-        /// See overload for UIntPtr address.
-        /// </summary>
-        public MemoryWatcher WatchMemory(IResolvableAddress address, int count)
-        {
-            return WatchMemory(address.Resolve(this), count);
+            MemoryAccessFlags flags = DetermineAccessFlags(path.Follow(this), count);
+            return new MemoryWatcher(this, path, count, flags);
         }
 
         private MemoryAccessFlags DetermineAccessFlags(UIntPtr address, int size)

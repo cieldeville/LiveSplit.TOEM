@@ -29,17 +29,17 @@ namespace LiveSplit.TOEM.Memory
 
         // Memory Info
         private readonly MemoryInterface _memInterface;
-        private readonly UIntPtr _memAddress;
+        private readonly PointerPath _memPath;
         private readonly int _memSize;
         private byte[] _memBuffer;
         private MemoryAccessFlags _memAccess;
 
-        internal MemoryWatcher(MemoryInterface memInterface, UIntPtr memAddress, int memSize, MemoryAccessFlags memAccess)
+        internal MemoryWatcher(MemoryInterface memInterface, PointerPath memPath, int memSize, MemoryAccessFlags memAccess)
         {
             _contents = new byte[memSize];
 
             _memInterface = memInterface;
-            _memAddress = memAddress;
+            _memPath = memPath;
             _memSize = memSize;
             _memBuffer = new byte[memSize];
             _memAccess = memAccess;
@@ -63,7 +63,7 @@ namespace LiveSplit.TOEM.Memory
             try
             {
                 // Retrieve memory snapshot
-                _memInterface.ReadMemory(_memAddress, _memBuffer, (ulong)_memSize, out ulong numberOfBytesRead);
+                _memInterface.ReadMemory(_memPath.Follow(_memInterface), _memBuffer, (ulong)_memSize, out ulong numberOfBytesRead);
                 if (numberOfBytesRead != (ulong)_memSize)
                 {
                     return false;
@@ -113,7 +113,7 @@ namespace LiveSplit.TOEM.Memory
                     buffer = _memBuffer;
                 }
 
-                _memInterface.WriteMemory(new UIntPtr(_memAddress.ToUInt64() + (ulong) dstOffset), buffer, (ulong) count, out ulong numberOfBytesWritten);
+                _memInterface.WriteMemory(new UIntPtr(_memPath.Follow(_memInterface).ToUInt64() + (ulong) dstOffset), buffer, (ulong) count, out ulong numberOfBytesWritten);
                 if (numberOfBytesWritten != (ulong) count)
                 {
                     return false;

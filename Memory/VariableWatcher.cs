@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LiveSplit.TOEM.Memory
 {
@@ -41,19 +37,19 @@ namespace LiveSplit.TOEM.Memory
 
         // Memory Info
         private readonly MemoryInterface _memInterface;
-        private readonly UIntPtr _memAddress;
+        private readonly PointerPath _memPath;
         private readonly int _memSize;
         private byte[] _memBuffer;
         private MemoryAccessFlags _memAccess;
 
-        internal VariableWatcher(MemoryInterface memInterface, UIntPtr memAddress, MemoryAccessFlags memAccess, T defaultValue = default)
+        internal VariableWatcher(MemoryInterface memInterface, PointerPath memPath, MemoryAccessFlags memAccess, T defaultValue = default)
         {
             _oldValue = defaultValue;
             _currentValue = defaultValue;
             _defaultValue = defaultValue;
 
             _memInterface = memInterface;
-            _memAddress = memAddress;
+            _memPath = memPath;
             unsafe
             {
                 if (typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr)) _memSize = IntPtr.Size;
@@ -81,7 +77,7 @@ namespace LiveSplit.TOEM.Memory
             try
             {
                 // Retrieve memory snapshot
-                _memInterface.ReadMemory(_memAddress, _memBuffer, (ulong) _memSize, out ulong numberOfBytesRead);
+                _memInterface.ReadMemory(_memPath.Follow(_memInterface), _memBuffer, (ulong) _memSize, out ulong numberOfBytesRead);
                 if (numberOfBytesRead != (ulong) _memSize)
                 {
                     return false;
@@ -128,7 +124,7 @@ namespace LiveSplit.TOEM.Memory
                     }
                 }
 
-                _memInterface.WriteMemory(_memAddress, _memBuffer, (ulong)_memSize, out ulong numberOfBytesWritten);
+                _memInterface.WriteMemory(_memPath.Follow(_memInterface), _memBuffer, (ulong)_memSize, out ulong numberOfBytesWritten);
                 if (numberOfBytesWritten != (ulong) _memSize)
                 {
                     return false;

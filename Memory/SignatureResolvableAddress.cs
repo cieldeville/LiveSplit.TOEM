@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LiveSplit.TOEM.Memory
 {
@@ -11,6 +9,8 @@ namespace LiveSplit.TOEM.Memory
         private readonly Signature _signature;
         private readonly int _offset;
         private readonly Func<WinAPI.MemoryBasicInformation, bool> _filter;
+
+        private ulong _cachedAddress;
 
         /// <summary>
         /// Constructs a new signature-resolvable address given its signature.
@@ -31,20 +31,28 @@ namespace LiveSplit.TOEM.Memory
                 _filter = m => m.Readable && m.Writable && (m.Protect & WinAPI.PAGE_GUARD) == 0;
             }
 
+            _cachedAddress = 0;
         }
         
-        public UIntPtr Resolve(MemoryInterface memInterface)
+        public ulong Resolve(MemoryInterface memInterface)
         {
+            if (_cachedAddress != 0) return _cachedAddress;
+
             MemoryScanner scanner = new MemoryScanner(memInterface);
-            List<MemoryScanner.Match> matches = scanner.Find(_signature, _filter, true);
+            List<MemoryScanner.Match> matches = scanner.Find(_signature, _filter, false);
             try
             {
-                return matches.First().GetUIntPtr(_offset);
+                return (_cachedAddress = matches.First().GetUInt64(_offset));
             }
             catch (Exception ex)
             {
                 throw new Exception("Could not resolve address by signature", ex);
             }
+        }
+
+        public void Flush()
+        {
+            _cachedAddress = 0;
         }
     }
 }
