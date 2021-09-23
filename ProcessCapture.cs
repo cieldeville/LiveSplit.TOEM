@@ -24,7 +24,7 @@ namespace LiveSplit.TOEM
         /// <summary>
         /// Number of seconds in between hooking attempts
         /// </summary>
-        public int HookAttemptDelay { get; set; } = 2;
+        public int HookAttemptDelay { get; set; } = 10;
 
         /// <summary>
         /// Event raised whenever a new process has been hooked.
@@ -66,7 +66,7 @@ namespace LiveSplit.TOEM
             CheckHook();
 
             // If not currently hook, check if hook attempt should be made
-            if (!_isHooked && _lastHookAttempt.AddSeconds(2) <= DateTime.Now)
+            if (!_isHooked && _lastHookAttempt.AddSeconds(HookAttemptDelay) <= DateTime.Now)
             {
                 _lastHookAttempt = DateTime.Now;
 

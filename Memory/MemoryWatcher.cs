@@ -2,172 +2,130 @@
 
 namespace LiveSplit.TOEM.Memory
 {
+    /// <summary>
+    /// Utility class which allows for watching a region of a foreign process' memory.
+    /// </summary>
     public class MemoryWatcher
     {
-        public enum ProtectionFlags : int
+        /// <summary>
+        /// The contents of the last successful memory snapshot taken during an Update()
+        /// </summary>
+        public byte[] Content { get { return _contents; } }
+
+        /// <summary>
+        /// A set of flags describing the available access to this variable.
+        /// </summary>
+        public MemoryAccessFlags AccessFlags { get { return _memAccess; } }
+        /// <summary>
+        /// Convenience property for checking if this variable may be read.
+        /// </summary>
+        public bool Readable { get { return (_memAccess & MemoryAccessFlags.Read) != MemoryAccessFlags.None; } }
+        /// <summary>
+        /// Convenience property for checking if this variable may be written.
+        /// </summary>
+        public bool Writable { get { return (_memAccess & MemoryAccessFlags.Write) != MemoryAccessFlags.None; } }
+
+        private byte[] _contents;
+
+        // Memory Info
+        private readonly MemoryInterface _memInterface;
+        private readonly UIntPtr _memAddress;
+        private readonly int _memSize;
+        private byte[] _memBuffer;
+        private MemoryAccessFlags _memAccess;
+
+        internal MemoryWatcher(MemoryInterface memInterface, UIntPtr memAddress, int memSize, MemoryAccessFlags memAccess)
         {
-            None = 0,
-            Readable = 1,
-            Writable = 2,
-            Executable = 4
-        }
+            _contents = new byte[memSize];
 
-        public MemoryInterface MemoryInterface { get; }
-        public UIntPtr Address { get; }
-        public int Size { get; }
-        public bool Dirty { get { return _dirty; } }
-
-        public ProtectionFlags Flags { get { return _flags; } }
-
-        private byte[] _buffer;
-        private ProtectionFlags _flags;
-        private bool _dirty;
-
-        public MemoryWatcher(MemoryInterface memory, UIntPtr address, int size)
-        {
-            MemoryInterface = memory;
-            Address = address;
-            Size = size;
-
-            _buffer = new byte[size];
-            _flags = ProtectionFlags.None;
-            _dirty = true;
-
-            Initialize();
+            _memInterface = memInterface;
+            _memAddress = memAddress;
+            _memSize = memSize;
+            _memBuffer = new byte[memSize];
+            _memAccess = memAccess;
         }
 
         /// <summary>
-        /// Attempts to update the memory watcher with the current contents of the watched memory region.
+        /// Attempts to update the watcher's current value by retrieving a new memory snapshot.
+        /// If the memory region in question is not readable or a snapshot
+        /// could not be taken in full, the update will fail, this method will return false
+        /// and the Content property will be left unchanged.
         /// 
-        /// Should the procedure fail, the watcher will be left in a dirty state.
+        /// If this method succeeds it will return true and Content will reflect the snapshot that
+        /// was taken.
         /// </summary>
-        /// <returns>Whether or not the operation completed successfully</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown if the watched memory region is not readable</exception>
+        /// <returns>True on success, false on failure.</returns>
         public bool Update()
         {
-            if ((_flags & ProtectionFlags.Readable) == 0) throw new UnauthorizedAccessException("Memory region is not readable");
-            try
-            {
-                MemoryInterface.ReadMemory(Address, _buffer, (ulong)Size, out ulong numberOfBytesRead);
-                return !(_dirty = (numberOfBytesRead != (ulong)Size));
-            }
-            catch (Exception ex)
-            {
-                // TODO: Log exception
-                _dirty = true;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets the data of this memory region as it was when last updated.
-        /// 
-        /// In case the watcher is currently in a dirty state (e.g. the last update only completed partially)
-        /// an update will be triggered.
-        /// </summary>
-        /// <returns>The contents of the watched memory region on the last update</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown if the watched memory region is not readable</exception>
-        /// <exception cref="Exception">Thrown if the watcher was in a dirty state and could not be updated successfully</exception>
-        public byte[] GetRaw()
-        {
-            if ((_flags & ProtectionFlags.Readable) == 0) throw new UnauthorizedAccessException("Memory region is not readable");
-            if (_dirty && !Update()) throw new Exception("Could not retrieve data from memory");
-            return _buffer;
-        }
-
-        /// <summary>
-        /// Gets the data of this memory region and converts it to some primitive type. The size of the primitive type and
-        /// the watched memory region must match. Internally GetRaw() will be invoked to retrieve the contents, so please
-        /// refer to its documentation as well.
-        /// </summeary>
-        /// <typeparam name="T">The primitive type (or IntPtr / UIntPtr) to convert to</typeparam>
-        /// <exception cref="ArgumentException">Thrown if the primitive type's size does not match the size of the memory region</exception>
-        /// <returns>The converted value on success</returns>
-        public T Get<T>() where T : unmanaged
-        {
-            unsafe
-            {
-                int s = 0;
-                if (typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr)) s = IntPtr.Size;
-                else s = sizeof(T);
-                
-                if (s != Size) throw new ArgumentException("Incompatible type size");
-
-                byte[] raw = GetRaw();
-                fixed (byte* p = raw)
-                {
-                    return *(T*)p;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to set the watched memory region's contents.
-        /// 
-        /// Should the write operation to the watched memory region not complete successfully the watcher will be left in a dirty state.
-        /// </summary>
-        /// <param name="value">A byte array with at least Size bytes containing the new memory contents</param>
-        /// <returns>Whether or not the memory region could be written to successfully</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown if the watched memory region is not writable</exception>
-        /// <exception cref="ArgumentException">Thrown if value is not at least Size bytes long</exception>
-        public bool SetRaw(byte[] value)
-        {
-            if (value.Length < Size) throw new ArgumentException("Must provide at least Size bytes of data");
-            if ((_flags & ProtectionFlags.Writable) == 0) throw new UnauthorizedAccessException("Memory region is not writable");
+            // No-op, if memory is not readable
+            if (!Readable) return false;
 
             try
             {
-                MemoryInterface.WriteMemory(Address, value, (ulong) Size, out ulong numberOfBytesWritten);
-                _dirty = (numberOfBytesWritten != (ulong)Size);
-                Buffer.BlockCopy(value, 0, _buffer, 0, Size);
-                return !_dirty;
+                // Retrieve memory snapshot
+                _memInterface.ReadMemory(_memAddress, _memBuffer, (ulong)_memSize, out ulong numberOfBytesRead);
+                if (numberOfBytesRead != (ulong)_memSize)
+                {
+                    return false;
+                }
+
+                // Transfer contents
+                Buffer.BlockCopy(_memBuffer, 0, _contents, _memSize, _memSize);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // TODO: Log exception
-                _dirty = true;
                 return false;
             }
+
+            return true;
         }
 
         /// <summary>
-        /// Attempts to replace the watched memory region's contents with the specified value.
+        /// Attempts to write the specified value into the variable's watched memory region. This
+        /// requires the memory region to be writable. There is a chance of a partial write occurring ;
+        /// in this case this method will return false.
         /// 
-        /// The value must be a primitive type or IntPtr / UIntPtr whose size matches the watched memory's region exactly. Internally,
-        /// SetRaw will be invoked so please also refer to its documentation.
+        /// Unlike setting a variable through a VariableWatcher writing to a MemoryWatcher will NOT
+        /// update the currently held contents of the watcher. Since it allows to only overwrite parts
+        /// of the watched memory region a full new snapshot would need to be taken after the write
+        /// to ensure that any part that was not written to did not change since the last call to
+        /// Update().
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="value">The value to set</param>
-        /// <returns>Whether or not the memory region could be updated successfully</returns>
-        public bool Set<T>(T value) where T : unmanaged
-        {                
-            byte[] temp;
-            unsafe
+        /// <param name="src">The source array to copy from</param>
+        /// <param name="srcOffset">The offset into the source array at which to begin copying from</param>
+        /// <param name="dstOffset">The offset into the watched memory region at which to begin copying to</param>
+        /// <param name="count">The amount of bytes to copy</param>
+        /// <returns>Whether or not the operation completed successfully and in whole</returns>
+        public bool Write(byte[] src, int srcOffset, int dstOffset, int count)
+        {
+            if (!Writable) return false;
+            if (dstOffset + count > _memSize) return false; // Prevent out-of-bounds writes
+            if (srcOffset + count > src.Length) return false; // Prevent out-of-bounds reads
+
+            try
             {
-                int size = 0;
-                if (typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr)) size = IntPtr.Size;
-                else size = sizeof(T);
-
-                if (size != Size) throw new ArgumentException("Incompatible type size");
-
-                temp = new byte[size];
-                fixed (byte* p = temp)
+                byte[] buffer;
+                if (srcOffset == 0 && count == src.Length) buffer = src;
+                else
                 {
-                    Buffer.MemoryCopy(&value, p, size, size);
+                    Buffer.BlockCopy(src, srcOffset, _memBuffer, 0, count);
+                    buffer = _memBuffer;
+                }
+
+                _memInterface.WriteMemory(new UIntPtr(_memAddress.ToUInt64() + (ulong) dstOffset), buffer, (ulong) count, out ulong numberOfBytesWritten);
+                if (numberOfBytesWritten != (ulong) count)
+                {
+                    return false;
                 }
             }
-            return SetRaw(temp);
+            catch (Exception)
+            {
+                // TODO: Log exception
+                return false;
+            }
+
+            return true;
         }
-
-        private void Initialize()
-        {
-            WinAPI.MemoryBasicInformation memInfo = MemoryInterface.GetMemoryInfo(Address);
-
-            _flags = ProtectionFlags.None;
-            _flags |= memInfo.Readable ? ProtectionFlags.Readable : ProtectionFlags.None;
-            _flags |= memInfo.Writable ? ProtectionFlags.Writable : ProtectionFlags.None;
-            _flags |= memInfo.Executable ? ProtectionFlags.Executable : ProtectionFlags.None;
-        }
-
     }
 }

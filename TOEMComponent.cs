@@ -5,10 +5,7 @@ using LiveSplit.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -27,25 +24,23 @@ namespace LiveSplit.TOEM
         public float PaddingRight { get { return 0; } }
         public IDictionary<string, Action> ContextMenuControls { get { return null; } }
 
-        private Thread updateLoop;
-        private bool updateLoopRunning;
+        private Thread _updateLoop;
+        private bool _updateLoopRunning;
 
-        private ProcessCapture processCapture;
-        private MemoryInterface memoryInterface;
-
-        // Capture game variables
-        private MemoryWatcher currentRegion = null;
+        private ProcessCapture _processCapture;
+        private MemoryInterface _memoryInterface;
+        private GameState _gameState;
 
         public TOEMComponent(LiveSplitState state, bool shown = false)
         {
-            processCapture = new ProcessCapture("TOEM");
-            processCapture.ProcessHooked += InitializeHook;
-            processCapture.ProcessLost += DisposeHook;
+            _processCapture = new ProcessCapture("TOEM");
+            _processCapture.ProcessHooked += InitializeHook;
+            _processCapture.ProcessLost += DisposeHook;
 
-            updateLoopRunning = true;
-            updateLoop = new Thread(UpdateLoopMain);
-            updateLoop.IsBackground = true;
-            updateLoop.Start();
+            _updateLoopRunning = true;
+            _updateLoop = new Thread(UpdateLoopMain);
+            _updateLoop.IsBackground = true;
+            _updateLoop.Start();
         }
 
         //
@@ -53,7 +48,7 @@ namespace LiveSplit.TOEM
         //
         private void UpdateLoopMain()
         {
-            while (updateLoopRunning)
+            while (_updateLoopRunning)
             {
                 try
                 {
@@ -70,30 +65,21 @@ namespace LiveSplit.TOEM
         private void PerformUpdate()
         {
             // Attempt to hook game, if not already hooked
-            if (!processCapture.EnsureProcessHook()) return;
+            if (!_processCapture.EnsureProcessHook()) return;
             UpdateHook();
         }
 
         private void InitializeHook(object sender, EventArgs args)
         {
-            memoryInterface = new MemoryInterface(processCapture.HookedProcess);
-
-            // Initialize game variables
-            MemoryScanner scanner = new MemoryScanner(memoryInterface);
-            List<MemoryScanner.Match> matches = scanner.Find(
-                Signature.From("41 FF D3 48 8B CE 48 B8 ?? ?? ?? ?? ?? ?? ?? ?? 89 08 48 B8"),
-                m => (m.Protect & WinAPI.PAGE_EXECUTE_READWRITE) != 0 && (m.Protect & WinAPI.PAGE_GUARD) == 0,
-                true
-            );
-
-            if (matches.Count > 0)
+            try
             {
-                MemoryScanner.Match match = matches.First();
-                currentRegion = new MemoryWatcher(memoryInterface, match.GetUIntPtr(8), 4);
+                _memoryInterface = new MemoryInterface(_processCapture.HookedProcess);
+                _gameState = new GameState(_memoryInterface);
             }
-            else
+            catch (Exception)
             {
-                processCapture.Unhook();
+                // TODO: Log exception
+                _processCapture.Unhook();
             }
         }
 
@@ -101,19 +87,19 @@ namespace LiveSplit.TOEM
         {
             try
             {
-                currentRegion.Update();
-                Console.WriteLine("Current Region: " + currentRegion.Get<int>().ToString());
+                _gameState.Update();
+                Console.WriteLine("Current Region: " + _gameState.CurrentRegion.CurrentValue.ToString());
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("Failed to update game variables");
+                // TODO: Log exception
             }
         }
 
         private void DisposeHook(object sender, EventArgs args)
         {
-            currentRegion = null;
-            memoryInterface = null;
+            _gameState = null;
+            _memoryInterface = null;
         }
 
         //

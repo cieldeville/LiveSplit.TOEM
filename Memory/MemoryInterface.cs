@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LiveSplit.TOEM.Memory
 {
@@ -133,6 +130,73 @@ namespace LiveSplit.TOEM.Memory
             }
 
             numberOfBytesWritten = numberOfBytesWrittenPtr.ToUInt64();
+        }
+
+        /// <summary>
+        /// Creates a VariableWatcher which may be used to access a variable in the process' memory.
+        /// </summary>
+        /// <typeparam name="T">The type of variable ; must be unmanaged and primitive</typeparam>
+        /// <param name="address">The address of the variable</param>
+        /// <param name="defaultValue">The variable's default value</param>
+        /// <returns>A variable watcher for the described variable</returns>
+        public VariableWatcher<T> WatchMemory<T>(UIntPtr address, T defaultValue = default(T)) where T : unmanaged
+        {
+            // Determine access levels
+            int size;
+            unsafe
+            {
+                if (typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr)) size = IntPtr.Size;
+                else size = sizeof(T);
+            }
+
+            MemoryAccessFlags flags = DetermineAccessFlags(address, size);
+            return new VariableWatcher<T>(this, address, flags, defaultValue);
+        }
+
+        /// <summary>
+        /// See overload for UIntPtr address.
+        /// </summary>
+        public VariableWatcher<T> WatchMemory<T>(IResolvableAddress address, T defaultValue = default(T)) where T : unmanaged
+        {
+            return WatchMemory(address.Resolve(this), defaultValue);
+        }
+
+        /// <summary>
+        /// Creates a MemoryWatcher which may be used to access a region of the process' memory.
+        /// </summary>
+        /// <param name="address">The address of the memory region</param>
+        /// <param name="count">The size of the memory region in bytes</param>
+        /// <returns>A memory watcher for the described memory region</returns>
+        public MemoryWatcher WatchMemory(UIntPtr address, int count)
+        {
+            MemoryAccessFlags flags = DetermineAccessFlags(address, count);
+            return new MemoryWatcher(this, address, count, flags);
+        }
+
+        /// <summary>
+        /// See overload for UIntPtr address.
+        /// </summary>
+        public MemoryWatcher WatchMemory(IResolvableAddress address, int count)
+        {
+            return WatchMemory(address.Resolve(this), count);
+        }
+
+        private MemoryAccessFlags DetermineAccessFlags(UIntPtr address, int size)
+        {
+            MemoryAccessFlags flags = MemoryAccessFlags.Read | MemoryAccessFlags.Write | MemoryAccessFlags.Execute;
+
+            ulong cursor = address.ToUInt64();
+            ulong end = cursor + (ulong)size;
+            while (cursor < end)
+            {
+                WinAPI.MemoryBasicInformation memInfo = GetMemoryInfo(new UIntPtr(cursor));
+                flags &= memInfo.Readable ? ~MemoryAccessFlags.None : ~MemoryAccessFlags.Read;
+                flags &= memInfo.Writable ? ~MemoryAccessFlags.None : ~MemoryAccessFlags.Write;
+                flags &= memInfo.Executable ? ~MemoryAccessFlags.None : ~MemoryAccessFlags.Execute;
+                cursor += memInfo.RegionSize.ToUInt64();
+            }
+
+            return flags;
         }
 
     }
