@@ -59,13 +59,15 @@ namespace LiveSplit.TOEM.Game
         {
             try
             {
+                UIntPtr defaultStateValue = new UIntPtr(0xFFFFFFFFFFFFFFFFUL);
+
                 _playerController = _playerControllerInstancePath.Follow(memInterface);
-                _currentStateRef = memInterface.WatchMemory<UIntPtr>(_currentStatePath);
-                _sitStateRef = memInterface.WatchMemory<UIntPtr>(_sitStatePath);
-                _roamStateRef = memInterface.WatchMemory<UIntPtr>(_roamStatePath);
-                _playAnimationStateRef = memInterface.WatchMemory<UIntPtr>(_playAnimationStatePath);
-                _faceBoardStateRef = memInterface.WatchMemory<UIntPtr>(_faceBoardStatePath);
-                _climbingStateRef = memInterface.WatchMemory<UIntPtr>(_climbingStatePath);
+                _currentStateRef = memInterface.WatchMemory<UIntPtr>(_currentStatePath, UIntPtr.Zero);
+                _sitStateRef = memInterface.WatchMemory<UIntPtr>(_sitStatePath, defaultStateValue);
+                _roamStateRef = memInterface.WatchMemory<UIntPtr>(_roamStatePath, defaultStateValue);
+                _playAnimationStateRef = memInterface.WatchMemory<UIntPtr>(_playAnimationStatePath, defaultStateValue);
+                _faceBoardStateRef = memInterface.WatchMemory<UIntPtr>(_faceBoardStatePath, defaultStateValue);
+                _climbingStateRef = memInterface.WatchMemory<UIntPtr>(_climbingStatePath, defaultStateValue);
 
                 _wasRoamingBefore = false;
                 return true;

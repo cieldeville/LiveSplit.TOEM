@@ -17,12 +17,21 @@ namespace LiveSplit.TOEM.Memory
         public Process Process { get; }
 
         /// <summary>
+        /// The process' modules at the time of the interface's construction.
+        /// </summary>
+        public List<Module> Modules { get { return _modules; } }
+
+        private List<Module> _modules;
+        private Dictionary<string, Module> _modulesByName;
+
+        /// <summary>
         /// Constructs a new memory interface to access the specified process' memory.
         /// </summary>
         /// <param name="process">The process whose memory to access</param>
         public MemoryInterface(Process process)
         {
             Process = process;
+            EnumerateModules();
         }
 
         /// <summary>
@@ -33,6 +42,17 @@ namespace LiveSplit.TOEM.Memory
         {
             WinAPI.GetNativeSystemInfo(out WinAPI.SystemInfo systemInfo);
             return systemInfo;
+        }
+
+        /// <summary>
+        /// Attempts to retrieve a module given it's name (case-insensitive)
+        /// </summary>
+        /// <param name="name">The module's name (case-insensitive)</param>
+        /// <param name="module">The module itself, if found</param>
+        /// <returns>True if the module was found, false otherwise</returns>
+        public bool TryGetModule(string name, out Module module)
+        {
+            return _modulesByName.TryGetValue(name, out module);
         }
 
         /// <summary>
@@ -181,6 +201,44 @@ namespace LiveSplit.TOEM.Memory
             }
 
             return flags;
+        }
+
+        private void EnumerateModules()
+        {
+            UIntPtr[] moduleHandles;
+            uint cb;
+            uint cbNeeded = 32;
+
+            do
+            {
+                cb = cbNeeded;
+                moduleHandles = new UIntPtr[cb / UIntPtr.Size];
+
+                if (!WinAPI.EnumProcessModulesEx(Process.Handle, moduleHandles, (uint) (moduleHandles.Length * UIntPtr.Size), out cbNeeded, WinAPI.LIST_MODULES_ALL))
+                {
+                    return;
+                }
+            } while (cbNeeded > cb);
+
+            int numModules = (int) cbNeeded / UIntPtr.Size;
+            _modules = new List<Module>(numModules);
+            _modulesByName = new Dictionary<string, Module>(numModules, StringComparer.OrdinalIgnoreCase);
+
+            char[] nameBuffer = new char[WinAPI.MAX_PATH];
+
+            for (int i = 0; i < numModules; ++i)
+            {
+                uint ret = WinAPI.GetModuleBaseName(Process.Handle, moduleHandles[i], nameBuffer, WinAPI.MAX_PATH);
+                if (ret == 0)
+                {
+                    return;
+                }
+
+                string moduleName = new string(nameBuffer, 0, (int)ret);
+                Module module = new Module() { BaseName = moduleName, BaseAddress = moduleHandles[i] };
+                _modules.Add(module);
+                _modulesByName.Add(moduleName, module);
+            }
         }
 
     }

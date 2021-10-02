@@ -141,5 +141,10 @@ namespace LiveSplit.TOEM.Memory
 
             return true;
         }
+
+        public override string ToString()
+        {
+            return "{ old = " + OldValue + ", current = " + CurrentValue + "}";
+        }
     }
 }

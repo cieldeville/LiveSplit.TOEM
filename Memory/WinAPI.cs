@@ -31,6 +31,19 @@ namespace LiveSplit.TOEM
         public const uint MEM_RESERVE = 0x2000u;
         public const uint MEM_FREE = 0x10000u;
 
+        // Module Enumeration Filter Constants
+        //
+        // https://docs.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-enumprocessmodulesex
+        public const uint LIST_MODULES_32BIT = 0x01u;
+        public const uint LIST_MODULES_64BIT = 0x02u;
+        public const uint LIST_MODULES_ALL = 0x03u;
+        public const uint LIST_MODULES_DEFAULT = 0x00u;
+
+        // Maximum Path Length Limitation
+        //
+        // https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
+        public const int MAX_PATH = 260;
+
         //
         // STRUCTS
         //
@@ -102,6 +115,10 @@ namespace LiveSplit.TOEM
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, out UIntPtr lpNumberOfBytesWritten);
-
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "K32EnumProcessModulesEx")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] UIntPtr[] lphModule, uint cb, out uint lpcbNeeded, uint dwFilter);
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "K32GetModuleBaseNameA")]
+        public static extern uint GetModuleBaseName(IntPtr hProcess, UIntPtr hModule, [Out] char[] lpBaseName, uint nSize);
     }
 }

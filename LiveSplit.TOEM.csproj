@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{92424484-44E1-4BA7-8562-46D3E22E1492}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>LiveSplit.TOEM</RootNamespace>
     <AssemblyName>LiveSplit.TOEM</AssemblyName>
@@ -37,6 +37,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -46,6 +47,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -61,6 +63,7 @@
     <Prefer32Bit>true</Prefer32Bit>
     <LangVersion>7.3</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WarningLevel>2</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -71,6 +74,9 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>2</WarningLevel>
+    <LangVersion>7.3</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="LiveSplit.Core">
@@ -98,12 +104,16 @@
   <ItemGroup>
     <Compile Include="Game\GameState.cs" />
     <Compile Include="Game\PlayerController.cs" />
+    <Compile Include="Game\Speedrun.cs" />
+    <Compile Include="IL2CPP\IL2CPPAPI.cs" />
     <Compile Include="Memory\IPointerPathElement.cs" />
     <Compile Include="Memory\IResolvableAddress.cs" />
     <Compile Include="Memory\MemoryAccessFlags.cs" />
     <Compile Include="Memory\MemoryInterface.cs" />
     <Compile Include="Memory\MemoryScanner.cs" />
     <Compile Include="Memory\MemoryWatcher.cs" />
+    <Compile Include="Memory\Module.cs" />
+    <Compile Include="Memory\ModuleResolvableAddress.cs" />
     <Compile Include="Memory\PointerPath.cs" />
     <Compile Include="Memory\PointerPathDeref.cs" />
     <Compile Include="Memory\PointerPathOffset.cs" />

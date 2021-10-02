@@ -91,5 +91,10 @@ namespace LiveSplit.TOEM.Memory
         {
             return new Builder(new SignatureResolvableAddress(signature, offset, assembly));
         }
+
+        public static Builder Module(string moduleName, ulong offset = 0)
+        {
+            return new Builder(new ModuleResolvableAddress(moduleName, offset));
+        }
     }
 }

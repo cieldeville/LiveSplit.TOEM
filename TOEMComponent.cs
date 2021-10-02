@@ -1,5 +1,6 @@
 ﻿using LiveSplit.Model;
-using LiveSplit.TOEM.Gane;
+using LiveSplit.TOEM.Game;
+using LiveSplit.TOEM.IL2CPP;
 using LiveSplit.TOEM.Memory;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
@@ -30,7 +31,7 @@ namespace LiveSplit.TOEM
 
         private ProcessCapture _processCapture;
         private MemoryInterface _memoryInterface;
-        private GameState _gameState;
+        private Speedrun _speedrun;
 
         public TOEMComponent(LiveSplitState state, bool shown = false)
         {
@@ -38,10 +39,13 @@ namespace LiveSplit.TOEM
             _processCapture.ProcessHooked += InitializeHook;
             _processCapture.ProcessLost += DisposeHook;
 
+            _speedrun = new Speedrun(state);
+
             _updateLoopRunning = true;
             _updateLoop = new Thread(UpdateLoopMain);
             _updateLoop.IsBackground = true;
             _updateLoop.Start();
+            
         }
 
         //
@@ -75,7 +79,7 @@ namespace LiveSplit.TOEM
             try
             {
                 _memoryInterface = new MemoryInterface(_processCapture.HookedProcess);
-                _gameState = new GameState(_memoryInterface);
+                _speedrun.ReInitialize(_memoryInterface);
             }
             catch (Exception)
             {
@@ -88,7 +92,7 @@ namespace LiveSplit.TOEM
         {
             try
             {
-                _gameState.Update();
+                _speedrun.Update();
             }
             catch (Exception ex)
             {
@@ -99,7 +103,7 @@ namespace LiveSplit.TOEM
 
         private void DisposeHook(object sender, EventArgs args)
         {
-            _gameState = null;
+            _speedrun.UnInitialize();
             _memoryInterface = null;
         }
 

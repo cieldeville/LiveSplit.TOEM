@@ -3,15 +3,21 @@ using LiveSplit.TOEM.Memory;
 using System;
 using System.Diagnostics;
 
-namespace LiveSplit.TOEM.Gane
+namespace LiveSplit.TOEM.Game
 {
     public class GameState
     {
         //
         // Addresses
         //
-        private static readonly PointerPath _atTitleScreenPath = PointerPath.Signature(Signature.From("41 FF D3 48 8B C8 48 B8 ?? ?? ?? ?? ?? ?? ?? ?? 40 88 08 48 B8 ?? ?? ?? ?? ?? ?? ?? ?? 0F B6 00 85 C0"), 8, true).Build();
-        private static readonly PointerPath _currentRegionAddr = PointerPath.Signature(Signature.From("41 FF D3 48 8B CE 48 B8 ?? ?? ?? ?? ?? ?? ?? ?? 89 08 48 B8"), 8, true).Build();
+        private static readonly PointerPath _gameManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E3FE88UL).Deref().Build();
+        private static readonly PointerPath _gameManagerStaticFields = _gameManagerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
+        private static readonly PointerPath _atTitleScreenPath = _gameManagerStaticFields.Extend().Offset(0x30UL).Build();
+        private static readonly PointerPath _currentRegionPath = _gameManagerStaticFields.Extend().Offset(0x40UL).Build();
+
+        private static readonly PointerPath _sceneTransitionControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E32D28UL).Deref().Build();
+        private static readonly PointerPath _sceneTransitionControllerStaticFields = _sceneTransitionControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
+        private static readonly PointerPath _isLoadingScenePath = _sceneTransitionControllerStaticFields.Extend().Offset(0x29UL).Build();
 
         //
         // Meta
@@ -23,7 +29,7 @@ namespace LiveSplit.TOEM.Gane
         //
         public VariableWatcher<bool> AtTitleScreen;
         public VariableWatcher<int> CurrentRegion;
-        public PlayerController PlayerController;
+        public VariableWatcher<bool> IsLoadingScene;
 
         public GameState(MemoryInterface memInterface)
         {
@@ -36,7 +42,8 @@ namespace LiveSplit.TOEM.Gane
             try
             {
                 AtTitleScreen = _memInterface.WatchMemory<bool>(_atTitleScreenPath, false);
-                PlayerController = new PlayerController();
+                CurrentRegion = _memInterface.WatchMemory<int>(_currentRegionPath, -1);
+                IsLoadingScene = _memInterface.WatchMemory<bool>(_isLoadingScenePath, false);
             }
             catch (Exception ex)
             {
@@ -46,12 +53,14 @@ namespace LiveSplit.TOEM.Gane
 
         public void Update()
         {
-            AtTitleScreen.Update();
-            if (!AtTitleScreen.CurrentValue && !PlayerController.Ready)
-            {
-                PlayerController.Initialize(_memInterface);
-            }
-            PlayerController.Update();
+            AtTitleScreen?.Update();
+            CurrentRegion?.Update();
+            IsLoadingScene?.Update();
+
+            Console.WriteLine("------------------------------------------------------");
+            Console.WriteLine("AtTitleScreen \t\t= " + AtTitleScreen);
+            Console.WriteLine("CurrentRegion \t\t= " + CurrentRegion);
+            Console.WriteLine("IsLoadingScene \t\t= " + IsLoadingScene);
         }
     }
 }
