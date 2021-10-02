@@ -15,13 +15,26 @@ namespace LiveSplit.TOEM.Game
             Unknown
         }
 
-        private static readonly PointerPath _playerControllerInstancePath = PointerPath.Signature(Signature.From("F3 0F 10 01 F3 0F 5A C0 F2 0F 5A E8 F3 0F 11 A8 ?? ?? ?? ?? 48 B8 ?? ?? ?? ?? ?? ?? ?? ??"), 22, true).Deref().Build();
-        private static readonly PointerPath _currentStatePath = _playerControllerInstancePath.Extend().Offset(0x1C0ul).Build();
-        private static readonly PointerPath _roamStatePath = _playerControllerInstancePath.Extend().Offset(0x1D0ul).Build();
-        private static readonly PointerPath _sitStatePath = _playerControllerInstancePath.Extend().Offset(0x1D8ul).Build();
-        private static readonly PointerPath _playAnimationStatePath = _playerControllerInstancePath.Extend().Offset(0x1E0ul).Build();
-        private static readonly PointerPath _faceBoardStatePath = _playerControllerInstancePath.Extend().Offset(0x1E8ul).Build();
-        private static readonly PointerPath _climbingStatePath = _playerControllerInstancePath.Extend().Offset(0x1F0ul).Build();
+        private static readonly PointerPath _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E49190UL).Deref().Build();
+        private static readonly PointerPath _playerControllerStaticFields = _playerControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
+        private static readonly PointerPath _playerControllerInstancePath = _playerControllerStaticFields.Extend().Deref().Build();
+
+        // Fields start at 16 bytes (= 0x10UL) offset in PlayerController_o structure
+        //
+        // struct PlayerController_o
+        // {
+        //     PlayerController_c* klass;
+        //     void* monitor;
+        //     PlayerController_Fields fields;
+        // };
+        //
+        // HOWEVER: These 0x10 bytes are already included in the offsets produced by IL2CPPDumper (!)
+        private static readonly PointerPath _currentStatePath = _playerControllerInstancePath.Extend().Offset(0x200UL).Build();
+        private static readonly PointerPath _roamStatePath = _playerControllerInstancePath.Extend().Offset(0x218UL).Build();
+        private static readonly PointerPath _sitStatePath = _playerControllerInstancePath.Extend().Offset(0x220UL).Build();
+        private static readonly PointerPath _playAnimationStatePath = _playerControllerInstancePath.Extend().Offset(0x228UL).Build();
+        private static readonly PointerPath _faceBoardStatePath = _playerControllerInstancePath.Extend().Offset(0x230UL).Build();
+        private static readonly PointerPath _climbingStatePath = _playerControllerInstancePath.Extend().Offset(0x238UL).Build();
 
 
         public bool Ready { get { return _playerController != UIntPtr.Zero; } }
@@ -48,51 +61,36 @@ namespace LiveSplit.TOEM.Game
         private VariableWatcher<UIntPtr> _faceBoardStateRef;
         private VariableWatcher<UIntPtr> _climbingStateRef;
 
-        private bool _wasRoamingBefore;
+        private MemoryInterface _memInterface;
 
-        public PlayerController()
+        public PlayerController(MemoryInterface memInterface)
         {
+            _memInterface = memInterface;
             Cleanup();
+            Initialize();
         }
 
-        public bool Initialize(MemoryInterface memInterface)
+        private void Initialize()
         {
-            try
-            {
-                UIntPtr defaultStateValue = new UIntPtr(0xFFFFFFFFFFFFFFFFUL);
+            UIntPtr defaultStateValue = new UIntPtr(0xFFFFFFFFFFFFFFFFUL);
 
-                _playerController = _playerControllerInstancePath.Follow(memInterface);
-                _currentStateRef = memInterface.WatchMemory<UIntPtr>(_currentStatePath, UIntPtr.Zero);
-                _sitStateRef = memInterface.WatchMemory<UIntPtr>(_sitStatePath, defaultStateValue);
-                _roamStateRef = memInterface.WatchMemory<UIntPtr>(_roamStatePath, defaultStateValue);
-                _playAnimationStateRef = memInterface.WatchMemory<UIntPtr>(_playAnimationStatePath, defaultStateValue);
-                _faceBoardStateRef = memInterface.WatchMemory<UIntPtr>(_faceBoardStatePath, defaultStateValue);
-                _climbingStateRef = memInterface.WatchMemory<UIntPtr>(_climbingStatePath, defaultStateValue);
-
-                _wasRoamingBefore = false;
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            _playerController = _playerControllerInstancePath.Follow(_memInterface);
+            _currentStateRef = _memInterface.WatchMemory<UIntPtr>(_currentStatePath, UIntPtr.Zero);
+            _sitStateRef = _memInterface.WatchMemory<UIntPtr>(_sitStatePath, defaultStateValue);
+            _roamStateRef = _memInterface.WatchMemory<UIntPtr>(_roamStatePath, defaultStateValue);
+            _playAnimationStateRef = _memInterface.WatchMemory<UIntPtr>(_playAnimationStatePath, defaultStateValue);
+            _faceBoardStateRef = _memInterface.WatchMemory<UIntPtr>(_faceBoardStatePath, defaultStateValue);
+            _climbingStateRef = _memInterface.WatchMemory<UIntPtr>(_climbingStatePath, defaultStateValue);
         }
 
         public void Update()
         {
-            _currentStateRef?.Update();
-            _sitStateRef?.Update();
-            _roamStateRef?.Update();
-            _playAnimationStateRef?.Update();
-            _faceBoardStateRef?.Update();
-            _climbingStateRef?.Update();
-
-            if (!_wasRoamingBefore && CurrentState == PlayerState.Roaming)
-            {
-                // Player stood up for the first time
-                Console.WriteLine("Starting Timer!");
-                _wasRoamingBefore = true;
-            }
+            _currentStateRef.Update();
+            _sitStateRef.Update();
+            _roamStateRef.Update();
+            _playAnimationStateRef.Update();
+            _faceBoardStateRef.Update();
+            _climbingStateRef.Update();
         }
 
         public void Cleanup()
@@ -101,6 +99,9 @@ namespace LiveSplit.TOEM.Game
             _currentStateRef = null;
             _sitStateRef = null;
             _roamStateRef = null;
+            _playAnimationStateRef = null;
+            _faceBoardStateRef = null;
+            _climbingStateRef = null;
         }
     }
 }

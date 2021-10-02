@@ -1,6 +1,5 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.TOEM.Game;
-using LiveSplit.TOEM.IL2CPP;
 using LiveSplit.TOEM.Memory;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;

@@ -105,7 +105,6 @@
     <Compile Include="Game\GameState.cs" />
     <Compile Include="Game\PlayerController.cs" />
     <Compile Include="Game\Speedrun.cs" />
-    <Compile Include="IL2CPP\IL2CPPAPI.cs" />
     <Compile Include="Memory\IPointerPathElement.cs" />
     <Compile Include="Memory\IResolvableAddress.cs" />
     <Compile Include="Memory\MemoryAccessFlags.cs" />

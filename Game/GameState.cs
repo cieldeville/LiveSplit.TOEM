@@ -57,10 +57,10 @@ namespace LiveSplit.TOEM.Game
             CurrentRegion?.Update();
             IsLoadingScene?.Update();
 
-            Console.WriteLine("------------------------------------------------------");
-            Console.WriteLine("AtTitleScreen \t\t= " + AtTitleScreen);
-            Console.WriteLine("CurrentRegion \t\t= " + CurrentRegion);
-            Console.WriteLine("IsLoadingScene \t\t= " + IsLoadingScene);
+            //Console.WriteLine("------------------------------------------------------");
+            //Console.WriteLine("AtTitleScreen \t\t= " + AtTitleScreen);
+            //Console.WriteLine("CurrentRegion \t\t= " + CurrentRegion);
+            //Console.WriteLine("IsLoadingScene \t\t= " + IsLoadingScene);
         }
     }
 }

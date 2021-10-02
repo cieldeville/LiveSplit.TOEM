@@ -1,5 +1,6 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.TOEM.Memory;
+using System;
 
 namespace LiveSplit.TOEM.Game
 {
@@ -15,6 +16,10 @@ namespace LiveSplit.TOEM.Game
             /// The speedrun is waiting for the player to visit the title screen to get ready for launch
             /// </summary>
             WaitingForTitleScreen,
+            /// <summary>
+            /// The speedrun is waiting for the player to be sitting on his bed
+            /// </summary>
+            WaitingForBed,
             /// <summary>
             /// The speedrun was in the main menu and may now start
             /// </summary>
@@ -63,6 +68,7 @@ namespace LiveSplit.TOEM.Game
         {
             _memoryInterface = memInterface;
             _gameState = new GameState(memInterface);
+            _playerController = new PlayerController(memInterface);
             Reset();
         }
 
@@ -118,6 +124,7 @@ namespace LiveSplit.TOEM.Game
             // if (_paused) return;
 
             _gameState.Update();
+            _playerController.Update();
 
 
             if (_currentState == State.WaitingForTitleScreen)
@@ -126,14 +133,23 @@ namespace LiveSplit.TOEM.Game
                 {
                     // Player has found his way into the title screen menu
                     // -> advance to next state
+                    _currentState = State.WaitingForBed;
+                }
+            }
+            else if (_currentState == State.WaitingForBed)
+            {
+                if (_playerController.CurrentState == PlayerController.PlayerState.Sitting)
+                {
+                    Console.WriteLine("Detected player on bed!");
                     _currentState = State.ReadyForLaunch;
                 }
             }
             else if (_currentState == State.ReadyForLaunch)
             {
-                if (!_gameState.AtTitleScreen.CurrentValue)
+                if (!_gameState.AtTitleScreen.CurrentValue && _playerController.CurrentState == PlayerController.PlayerState.Roaming)
                 {
-                    
+                    Console.WriteLine("Detected Game Start!");
+                    _currentState = State.Playing;
                 }
             }
         }
