@@ -128,7 +128,7 @@ namespace LiveSplit.TOEM.Game
 
             if (_currentState == State.WaitingForTitleScreen)
             {
-                if (_gameState.AtTitleScreen.CurrentValue)
+                if (_gameState.AtTitleScreen)
                 {
                     // Player has found his way into the title screen menu
                     // -> advance to next state
@@ -146,14 +146,26 @@ namespace LiveSplit.TOEM.Game
             }
             else if (_currentState == State.ReadyForLaunch)
             {
-                if (!_gameState.AtTitleScreen.CurrentValue && _playerController.CurrentState == PlayerController.PlayerState.Roaming)
+                if (!_gameState.AtTitleScreen && _playerController.CurrentState == PlayerController.PlayerState.Roaming)
                 {
                     Console.WriteLine("Detected Game Start!");
                     _currentState = State.Playing;
                 }
             }
+            else if (_currentState == State.Playing)
+            {
+                if (_gameState.CurrentRegion > _gameState.PreviousRegion)
+                {
+                    Console.WriteLine("Detected player advancing to a new region!");
+                }
 
-            if (_currentState >= State.ReadyForLaunch && _gameState.AtTitleScreen.CurrentValue)
+                if (_gameState.EndScreen == GameState.EndScreenState.Input)
+                {
+                    Console.WriteLine("Detected end of game!");
+                }
+            }
+
+            if (_currentState >= State.ReadyForLaunch && _gameState.AtTitleScreen)
             {
                 _currentState = State.WaitingForTitleScreen;
             }
