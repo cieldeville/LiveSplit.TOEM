@@ -80,14 +80,14 @@ namespace LiveSplit.TOEM.Game
 
         public void Reset()
         {
-            _currentState = State.WaitingForTitleScreen;
-            _currentSplit = 0;
             _timer.Reset();
         }
 
         public void OnTimerReset()
         {
             Debug.WriteLine("OnTimerReset() invoked");
+            _currentState = State.WaitingForTitleScreen;
+            _currentSplit = 0;
         }
 
         private void OnPause()
@@ -172,12 +172,13 @@ namespace LiveSplit.TOEM.Game
                 if (_gameState.EndScreen == GameState.EndScreenState.Input)
                 {
                     Console.WriteLine("Detected end of game!");
+                    _currentState = State.Finished;
                     _timer.Split();
                     _timer.CurrentState.IsGameTimePaused = true;
                 }
             }
 
-            if (_currentState >= State.ReadyForLaunch && _gameState.AtTitleScreen)
+            if (_currentState >= State.ReadyForLaunch && _currentState != State.Finished && _gameState.AtTitleScreen)
             {
                 Reset();
             }

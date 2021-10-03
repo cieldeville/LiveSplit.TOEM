@@ -20,7 +20,7 @@ namespace LiveSplit.TOEM
         /// <summary>
         /// Number of seconds in between hooking attempts
         /// </summary>
-        public int HookAttemptDelay { get; set; } = 10;
+        public int HookAttemptDelay { get; set; } = 3;
 
         /// <summary>
         /// Event raised whenever a new process has been hooked.
