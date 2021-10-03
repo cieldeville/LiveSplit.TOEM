@@ -1,6 +1,7 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.TOEM.Memory;
 using System;
+using System.Diagnostics;
 
 namespace LiveSplit.TOEM.Game
 {
@@ -36,7 +37,6 @@ namespace LiveSplit.TOEM.Game
 
 
         private State _currentState;
-        private bool _paused;
         private int _currentSplit;
 
         private MemoryInterface _memoryInterface;
@@ -46,22 +46,21 @@ namespace LiveSplit.TOEM.Game
         //
         // LiveSplit integration
         //
-        private LiveSplitState _liveSplit;
+        private TimerModel _timer;
 
         public Speedrun(LiveSplitState state)
         {
-            UnInitialize();
+            _timer = new TimerModel() { CurrentState = state };
+            _timer.InitializeGameTime();
+            _timer.OnReset += (sender, args) => OnTimerReset();
+            _timer.OnPause += (sender, args) => OnPause();
+            _timer.OnResume += (sender, args) => OnResume();
+            _timer.OnStart += (sender, args) => OnStart();
+            _timer.OnSplit += (sender, args) => OnSplit();
+            _timer.OnUndoSplit += (sender, args) => OnUndoSplit();
+            _timer.OnSkipSplit += (sender, args) => OnSkipSplit();
 
-            if (state != null)
-            {
-                _liveSplit.OnReset += (sender, args) => Reset();
-                _liveSplit.OnPause += (sender, args) => Pause();
-                _liveSplit.OnResume += (sender, args) => Resume();
-                _liveSplit.OnStart += (sender, args) => Start();
-                _liveSplit.OnSplit += (sender, args) => Split();
-                _liveSplit.OnUndoSplit += (sender, args) => UndoSplit();
-                _liveSplit.OnSkipSplit += (sender, args) => SkipSplit();
-            }
+            UnInitialize();
         }
 
         public void ReInitialize(MemoryInterface memInterface)
@@ -69,7 +68,7 @@ namespace LiveSplit.TOEM.Game
             _memoryInterface = memInterface;
             _gameState = new GameState(memInterface);
             _playerController = new PlayerController(memInterface);
-            Reset();
+            OnTimerReset();
         }
 
         public void UnInitialize()
@@ -77,45 +76,48 @@ namespace LiveSplit.TOEM.Game
             Reset();
             _gameState = null;
             _playerController = null;
-            _currentState = State.Uninitialized;
         }
 
         public void Reset()
         {
             _currentState = State.WaitingForTitleScreen;
-            _paused = true;
             _currentSplit = 0;
+            _timer.Reset();
         }
 
-        private void Pause()
+        public void OnTimerReset()
         {
-            _paused = true;
+            Debug.WriteLine("OnTimerReset() invoked");
         }
 
-        private void Resume()
+        private void OnPause()
         {
-            _paused = false;
+            Debug.WriteLine("OnPause() invoked");
         }
 
-        private void Start()
+        private void OnResume()
         {
-            Reset();
-            _paused = false;
+            Debug.WriteLine("OnResume() invoked");
         }
 
-        private void Split()
+        private void OnStart()
         {
-            ++_currentSplit;
+            Debug.WriteLine("OnStart() invoked");
         }
 
-        private void UndoSplit()
+        private void OnSplit()
         {
-            --_currentSplit;
+            Debug.WriteLine("OnSplit() invoked");
         }
 
-        private void SkipSplit()
+        private void OnUndoSplit()
         {
-            ++_currentSplit;
+            Debug.WriteLine("OnUndoSplit() invoked");
+        }
+
+        private void OnSkipSplit()
+        {
+            Debug.WriteLine("OnSkipSplit() invoked");
         }
 
         public void Update()
@@ -128,6 +130,7 @@ namespace LiveSplit.TOEM.Game
 
             if (_currentState == State.WaitingForTitleScreen)
             {
+                _timer.CurrentState.IsGameTimePaused = true;
                 if (_gameState.AtTitleScreen)
                 {
                     // Player has found his way into the title screen menu
@@ -138,6 +141,7 @@ namespace LiveSplit.TOEM.Game
             }
             else if (_currentState == State.WaitingForBed)
             {
+                _timer.CurrentState.IsGameTimePaused = true;
                 if (_playerController.CurrentState == PlayerController.PlayerState.Sitting)
                 {
                     Console.WriteLine("Detected player on bed!");
@@ -146,38 +150,37 @@ namespace LiveSplit.TOEM.Game
             }
             else if (_currentState == State.ReadyForLaunch)
             {
+                _timer.CurrentState.IsGameTimePaused = true;
                 if (!_gameState.AtTitleScreen && _playerController.CurrentState == PlayerController.PlayerState.Roaming)
                 {
                     Console.WriteLine("Detected Game Start!");
                     _currentState = State.Playing;
+                    _timer.Start();
                 }
             }
             else if (_currentState == State.Playing)
             {
+                // Handle loading times
+                _timer.CurrentState.IsGameTimePaused = _gameState.IsLoadingScene;
+
                 if (_gameState.CurrentRegion > _gameState.PreviousRegion)
                 {
                     Console.WriteLine("Detected player advancing to a new region!");
+                    _timer.Split();
                 }
 
                 if (_gameState.EndScreen == GameState.EndScreenState.Input)
                 {
                     Console.WriteLine("Detected end of game!");
+                    _timer.Split();
+                    _timer.CurrentState.IsGameTimePaused = true;
                 }
             }
 
             if (_currentState >= State.ReadyForLaunch && _gameState.AtTitleScreen)
             {
-                _currentState = State.WaitingForTitleScreen;
+                Reset();
             }
-        }
-
-        private void Launch()
-        {
-            _currentState = State.Playing;
-            _currentSplit = 0;
-
-            // Launch LiveSplit Timer
-            //_liveSplit.Start();
         }
     }
 }

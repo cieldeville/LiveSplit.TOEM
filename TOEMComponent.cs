@@ -5,6 +5,7 @@ using LiveSplit.UI;
 using LiveSplit.UI.Components;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
@@ -38,6 +39,7 @@ namespace LiveSplit.TOEM
             _processCapture.ProcessHooked += InitializeHook;
             _processCapture.ProcessLost += DisposeHook;
 
+            Debug.WriteLine("LiveSplitState = " + state);
             _speedrun = new Speedrun(state);
 
             _updateLoopRunning = true;
