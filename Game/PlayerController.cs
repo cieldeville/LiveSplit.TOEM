@@ -15,9 +15,9 @@ namespace LiveSplit.TOEM.Game
             Unknown
         }
 
-        private static readonly PointerPath _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E49190UL).Deref().Build();
-        private static readonly PointerPath _playerControllerStaticFields = _playerControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
-        private static readonly PointerPath _playerControllerInstancePath = _playerControllerStaticFields.Extend().Deref().Build();
+        private PointerPath _playerControllerTypeInfo;
+        private PointerPath _playerControllerStaticFields;
+        private PointerPath _playerControllerInstancePath;
 
         // Fields start at 16 bytes (= 0x10UL) offset in PlayerController_o structure
         //
@@ -29,12 +29,13 @@ namespace LiveSplit.TOEM.Game
         // };
         //
         // HOWEVER: These 0x10 bytes are already included in the offsets produced by IL2CPPDumper (!)
-        private static readonly PointerPath _currentStatePath = _playerControllerInstancePath.Extend().Offset(0x200UL).Build();
-        private static readonly PointerPath _roamStatePath = _playerControllerInstancePath.Extend().Offset(0x218UL).Build();
-        private static readonly PointerPath _sitStatePath = _playerControllerInstancePath.Extend().Offset(0x220UL).Build();
-        private static readonly PointerPath _playAnimationStatePath = _playerControllerInstancePath.Extend().Offset(0x228UL).Build();
-        private static readonly PointerPath _faceBoardStatePath = _playerControllerInstancePath.Extend().Offset(0x230UL).Build();
-        private static readonly PointerPath _climbingStatePath = _playerControllerInstancePath.Extend().Offset(0x238UL).Build();
+        private PointerPath _currentStatePath;
+        private PointerPath _nextStatePath;
+        private PointerPath _roamStatePath;
+        private PointerPath _sitStatePath;
+        private PointerPath _playAnimationStatePath;
+        private PointerPath _faceBoardStatePath;
+        private PointerPath _climbingStatePath;
 
 
         public bool Ready { get { return _playerController != UIntPtr.Zero; } }
@@ -55,6 +56,7 @@ namespace LiveSplit.TOEM.Game
 
         private UIntPtr _playerController;
         private VariableWatcher<UIntPtr> _currentStateRef;
+        private VariableWatcher<UIntPtr> _nextStateRef;
         private VariableWatcher<UIntPtr> _sitStateRef;
         private VariableWatcher<UIntPtr> _roamStateRef;
         private VariableWatcher<UIntPtr> _playAnimationStateRef;
@@ -67,7 +69,23 @@ namespace LiveSplit.TOEM.Game
         {
             _memInterface = memInterface;
             Cleanup();
+            BuildPaths();
             Initialize();
+        }
+
+        private void BuildPaths()
+        {
+            _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E49190UL).Deref().Build();
+            _playerControllerStaticFields = _playerControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
+            _playerControllerInstancePath = _playerControllerStaticFields.Extend().Deref().Build();
+
+            _currentStatePath = _playerControllerInstancePath.Extend().Offset(0x200UL).Build();
+            _nextStatePath = _playerControllerInstancePath.Extend().Offset(0x208UL).Build();
+            _roamStatePath = _playerControllerInstancePath.Extend().Offset(0x218UL).Build();
+            _sitStatePath = _playerControllerInstancePath.Extend().Offset(0x220UL).Build();
+            _playAnimationStatePath = _playerControllerInstancePath.Extend().Offset(0x228UL).Build();
+            _faceBoardStatePath = _playerControllerInstancePath.Extend().Offset(0x230UL).Build();
+            _climbingStatePath = _playerControllerInstancePath.Extend().Offset(0x238UL).Build();
         }
 
         private void Initialize()
@@ -76,6 +94,7 @@ namespace LiveSplit.TOEM.Game
 
             _playerController = _playerControllerInstancePath.Follow(_memInterface);
             _currentStateRef = _memInterface.WatchMemory<UIntPtr>(_currentStatePath, UIntPtr.Zero);
+            _nextStateRef = _memInterface.WatchMemory<UIntPtr>(_nextStatePath, UIntPtr.Zero);
             _sitStateRef = _memInterface.WatchMemory<UIntPtr>(_sitStatePath, defaultStateValue);
             _roamStateRef = _memInterface.WatchMemory<UIntPtr>(_roamStatePath, defaultStateValue);
             _playAnimationStateRef = _memInterface.WatchMemory<UIntPtr>(_playAnimationStatePath, defaultStateValue);
@@ -85,7 +104,21 @@ namespace LiveSplit.TOEM.Game
 
         public void Update()
         {
+            // For some unknown reason these states actually do sometimes get re-created
+            // or perhaps just moved by some C# / IL2CPP runtime quirk.
+            //
+            // This means we have to continuously follow the entire pointer path which
+            // unfortunately results in quite some calls to WinAPI.ReadMemory
+            _currentStatePath.Flush();
+            _nextStatePath.Flush();
+            _sitStatePath.Flush();
+            _roamStatePath.Flush();
+            _playAnimationStatePath.Flush();
+            _faceBoardStatePath.Flush();
+            _climbingStatePath.Flush();
+
             _currentStateRef.Update();
+            _nextStateRef.Update();
             _sitStateRef.Update();
             _roamStateRef.Update();
             _playAnimationStateRef.Update();

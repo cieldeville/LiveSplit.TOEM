@@ -126,13 +126,13 @@ namespace LiveSplit.TOEM.Game
             _gameState.Update();
             _playerController.Update();
 
-
             if (_currentState == State.WaitingForTitleScreen)
             {
                 if (_gameState.AtTitleScreen.CurrentValue)
                 {
                     // Player has found his way into the title screen menu
                     // -> advance to next state
+                    Console.WriteLine("Detected player in main menu!");
                     _currentState = State.WaitingForBed;
                 }
             }
@@ -151,6 +151,11 @@ namespace LiveSplit.TOEM.Game
                     Console.WriteLine("Detected Game Start!");
                     _currentState = State.Playing;
                 }
+            }
+
+            if (_currentState >= State.ReadyForLaunch && _gameState.AtTitleScreen.CurrentValue)
+            {
+                _currentState = State.WaitingForTitleScreen;
             }
         }
 
