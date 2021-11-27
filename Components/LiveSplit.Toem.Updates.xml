@@ -1,11 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<update version="1.8.0">
-  <files>
-    <file path="Components/LiveSplit.TOEM.dll" status="changed"/>
-  </files>
-  <changelog>
-    <change>Publishing for LiveSplit for the first time.</change>
-    <change>AutoSplitter detects player getting out of bed for the first time, then splits every new region and once the end screen prompt is shown.</change>
-    <change>Returning to main menu before reaching the ending will reset the timer.</change>
-  </changelog>
-</update>
+<updates>
+  <update version="1.8.0">
+    <files>
+      <file path="Components/LiveSplit.TOEM.dll" status="changed"/>
+    </files>
+    <changelog>
+      <change>Publishing for LiveSplit for the first time.</change>
+      <change>AutoSplitter detects player getting out of bed for the first time, then splits every new region and once the end screen prompt is shown.</change>
+      <change>Returning to main menu before reaching the ending will reset the timer.</change>
+    </changelog>
+  </update>
+  <update version="1.9.0">
+    <files>
+      <file path="Components/LiveSplit.TOEM.dll" status="changed"/>
+    </files>
+    <changelog>
+      <change>Updated AutoSplitter for TOEM v1.09</change>
+      <change>Fixed pointer paths to required types and fields</change>
+    </changelog>
+  </update>
+</updates>

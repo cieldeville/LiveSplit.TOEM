@@ -75,16 +75,26 @@ namespace LiveSplit.TOEM.Game
 
         private void BuildPaths()
         {
-            _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E49190UL).Deref().Build();
+            // script.json @ PlayerController_TypeInfo [Address]
+            _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1B9D350UL).Deref().Build();
+            // IL2CPP constant
             _playerControllerStaticFields = _playerControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
-            _playerControllerInstancePath = _playerControllerStaticFields.Extend().Deref().Build();
+            // PlayerController.cs @<Instance>k__BackingField [FieldOffset]
+            _playerControllerInstancePath = _playerControllerStaticFields.Extend().Offset(0x0UL).Deref().Build();
 
+            // PlayerController.cs @currentState [FieldOffset]
             _currentStatePath = _playerControllerInstancePath.Extend().Offset(0x200UL).Build();
+            // PlayerController.cs @nextState [FieldOffset]
             _nextStatePath = _playerControllerInstancePath.Extend().Offset(0x208UL).Build();
+            // PlayerController.cs @roamState [FieldOffset]
             _roamStatePath = _playerControllerInstancePath.Extend().Offset(0x218UL).Build();
+            // PlayerController.cs @sitState [ToFieldOffsetken]
             _sitStatePath = _playerControllerInstancePath.Extend().Offset(0x220UL).Build();
+            // PlayerController.cs @animationState [FieldOffset]
             _playAnimationStatePath = _playerControllerInstancePath.Extend().Offset(0x228UL).Build();
+            // PlayerController.cs @faceBoardState [FieldOffset]
             _faceBoardStatePath = _playerControllerInstancePath.Extend().Offset(0x230UL).Build();
+            // PlayerController.cs @climbingState [FieldOffset]
             _climbingStatePath = _playerControllerInstancePath.Extend().Offset(0x238UL).Build();
         }
 

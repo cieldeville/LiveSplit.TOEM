@@ -78,19 +78,34 @@ namespace LiveSplit.TOEM.Game
 
         private void BuildPaths()
         {
-            _gameManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E3FE88UL).Deref().Build();
+            // script.json @ GameManager_TypeInfo [Address]
+            _gameManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BBA520UL).Deref().Build();
+            // IL2CPP constant
             _gameManagerStaticFields = _gameManagerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
-            _atTitleScreenPath = _gameManagerStaticFields.Extend().Offset(0x30UL).Build();
-            _currentRegionPath = _gameManagerStaticFields.Extend().Offset(0x40UL).Build();
+            // GameManager.cs @<AtTitleScreen>k__BackingField [FieldOffset]
+            _atTitleScreenPath = _gameManagerStaticFields.Extend().Offset(0x38UL).Build();
+            // GameManager.cs @<CurrentRegion>k__BackingField [FieldOffset]
+            _currentRegionPath = _gameManagerStaticFields.Extend().Offset(0x48UL).Build();
 
-            _sceneTransitionControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E32D28UL).Deref().Build();
+
+            // script.json @ SceneTransitionController_TypeInfo [Address]
+            _sceneTransitionControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BB22C0UL).Deref().Build();
+            // IL2CPP constant
             _sceneTransitionControllerStaticFields = _sceneTransitionControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
+            // SceneTransitionController.cs @ <IsLoadingScene>k__BackingField
             _isLoadingScenePath = _sceneTransitionControllerStaticFields.Extend().Offset(0x29UL).Build();
 
-            _menuManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1E41780UL).Deref().Build();
+
+            // script.json @ MenuManager_TypeInfo [Address]
+            _menuManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BBBC60UL).Deref().Build();
+            // IL2CPP constant
             _menuManagerStaticFields = _menuManagerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
-            _menuManagerInstancePath = _menuManagerStaticFields.Extend().Deref().Build();
+            // MenuManager.cs @<Instance>k__BackingField [FieldOffset]
+            _menuManagerInstancePath = _menuManagerStaticFields.Extend().Offset(0x0UL).Deref().Build();
+            // MenuManager.cs @menu_TheEnd [FieldOffset]
             _theEndScreenInstancePath = _menuManagerInstancePath.Extend().Offset(0xD8UL).Deref().Build();
+
+            // TheEndScreen.cs @myState [FieldOffset]
             _theEndScreenStatePath = _theEndScreenInstancePath.Extend().Offset(0x40UL).Build();
         }
 
