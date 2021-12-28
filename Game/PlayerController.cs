@@ -76,7 +76,7 @@ namespace LiveSplit.TOEM.Game
         private void BuildPaths()
         {
             // script.json @ PlayerController_TypeInfo [Address]
-            _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1B9D350UL).Deref().Build();
+            _playerControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x176D2F8UL).Deref().Build();
             // IL2CPP constant
             _playerControllerStaticFields = _playerControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
             // PlayerController.cs @<Instance>k__BackingField [FieldOffset]

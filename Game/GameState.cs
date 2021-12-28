@@ -79,7 +79,7 @@ namespace LiveSplit.TOEM.Game
         private void BuildPaths()
         {
             // script.json @ GameManager_TypeInfo [Address]
-            _gameManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BBA520UL).Deref().Build();
+            _gameManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x176DE70UL).Deref().Build();
             // IL2CPP constant
             _gameManagerStaticFields = _gameManagerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
             // GameManager.cs @<AtTitleScreen>k__BackingField [FieldOffset]
@@ -89,7 +89,7 @@ namespace LiveSplit.TOEM.Game
 
 
             // script.json @ SceneTransitionController_TypeInfo [Address]
-            _sceneTransitionControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BB22C0UL).Deref().Build();
+            _sceneTransitionControllerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x176DBA0UL).Deref().Build();
             // IL2CPP constant
             _sceneTransitionControllerStaticFields = _sceneTransitionControllerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
             // SceneTransitionController.cs @ <IsLoadingScene>k__BackingField
@@ -97,7 +97,7 @@ namespace LiveSplit.TOEM.Game
 
 
             // script.json @ MenuManager_TypeInfo [Address]
-            _menuManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x1BBBC60UL).Deref().Build();
+            _menuManagerTypeInfo = PointerPath.Module("GameAssembly.dll", 0x176DEC0UL).Deref().Build();
             // IL2CPP constant
             _menuManagerStaticFields = _menuManagerTypeInfo.Extend().Offset(0xB8UL).Deref().Build();
             // MenuManager.cs @<Instance>k__BackingField [FieldOffset]

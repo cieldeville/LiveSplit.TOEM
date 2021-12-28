@@ -19,4 +19,13 @@
       <change>Fixed pointer paths to required types and fields</change>
     </changelog>
   </update>
+  <update version="1.11.0">
+    <files>
+      <file path="Components/LiveSplit.TOEM.dll" status="changed"/>
+    </files>
+    <changelog>
+      <change>Updated AutoSplitter for TOEM v1.11</change>
+      <change>Since I did not find the time to update for 1.10 before 1.11 was released, there will be no release for v1.10 unfortunately</change>
+    </changelog>
+  </update>
 </updates>
